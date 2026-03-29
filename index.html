@@ -1,376 +1,257 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>The Wood Game lol</title>
+<meta charset="UTF-8">
+<title>The Wood Game lol</title>
 
-  <script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
 
-  <style>
-    body {
-      margin: 0;
-      background: #1e1e1e;
-      color: white;
-      text-align: center;
-      font-family: Arial;
-    }
+<style>
+body { margin:0; background:#1e1e1e; color:white; text-align:center; font-family:Arial;}
+canvas { background:#2e2e2e; display:block; margin:20px auto; border:2px solid white;}
 
-    canvas {
-      background: #2e2e2e;
-      display: block;
-      margin: 20px auto;
-      border: 2px solid white;
-    }
+.barra-container { width:300px; height:20px; background:#555; margin:10px auto; border-radius:10px; overflow:hidden;}
+#barraHacha { height:100%; width:0%; background:#4CAF50;}
 
-    .barra-container {
-      width: 300px;
-      height: 20px;
-      background: #555;
-      margin: 10px auto;
-      border-radius: 10px;
-      overflow: hidden;
-    }
+#menuLogros {
+  display:none;
+  position:fixed;
+  top:20%;
+  left:50%;
+  transform:translateX(-50%);
+  background:#222;
+  padding:20px;
+  border:2px solid white;
+  max-height:300px;
+  overflow:auto;
+}
 
-    #barraHacha {
-      height: 100%;
-      width: 0%;
-      background: #4CAF50;
-      transition: width 0.2s;
-    }
+#discordBox {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: #2b2b2b;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #555;
+}
 
-    #mensajeMejora {
-      color: yellow;
-      font-weight: bold;
-      height: 20px;
-    }
-
-    #levelUpText {
-      position: fixed;
-      top: 40%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 50px;
-      font-weight: bold;
-      color: gold;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-    }
-
-    button {
-      margin: 5px;
-      padding: 5px 10px;
-      cursor: pointer;
-    }
-
-    /* 🔥 DISCORD BOX */
-    #discordBox {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      background: #2b2b2b;
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid #555;
-      font-size: 14px;
-      animation: glow 1s infinite alternate;
-    }
-
-    #discordBox a {
-      color: #00bfff;
-      text-decoration: none;
-    }
-
-    #discordBox a:hover {
-      text-decoration: underline;
-    }
-
-    @keyframes glow {
-      from { box-shadow: 0 0 5px #00bfff; }
-      to { box-shadow: 0 0 15px #00bfff; }
-    }
-  </style>
+button { margin:5px; padding:5px 10px; cursor:pointer;}
+</style>
 </head>
+
 <body>
 
 <h1>🌳 The Wood Game lol</h1>
-<p>WASD | ESPACIO talar | E plantar | Q mejorar | R rebirth</p>
 
 <canvas id="game" width="600" height="400"></canvas>
 
-<p>
-🪵 Madera: <span id="madera">0</span> |
-🪓 Hacha: <span id="hacha">1</span>
-</p>
-
-<p>
-🔁 Rebirths: <span id="rebirths">0</span> |
-⚡ Multiplicador: <span id="multi">1</span>x
-</p>
+<p>🪵 <span id="madera">0</span> | 🪓 <span id="hacha">1</span></p>
+<p>🔁 <span id="rebirths">0</span> | ⚡ <span id="multi">1</span>x</p>
 
 <div class="barra-container">
   <div id="barraHacha"></div>
 </div>
 
-<p>Progreso: <span id="progresoTexto"></span></p>
 <p id="mensajeMejora"></p>
 
-<div id="levelUpText">LEVEL UP!</div>
+<button onclick="toggleLogros()">🏆 Logros</button>
 
-<!-- 🎵 YOUTUBE -->
-<input id="ytlink" placeholder="Link YouTube">
+<div id="menuLogros">
+  <h2>🏆 Logros</h2>
+  <ul id="listaLogros"></ul>
+  <button onclick="toggleLogros()">Cerrar</button>
+</div>
+
+<!-- YT -->
+<input id="ytlink" placeholder="YouTube link">
 <button onclick="cargarYT()">Play</button>
-<button onclick="togglePlay()">Pause/Play</button>
-
-<p>🔊 Volumen</p>
+<button onclick="togglePlay()">Pause</button>
+<br>
 <input type="range" id="volumen" min="0" max="100">
 
 <div id="ytplayer"></div>
 
-<audio id="levelSound" src="https://www.myinstants.com/media/sounds/pop.mp3"></audio>
-
-<!-- 🚀 DISCORD -->
+<!-- Discord -->
 <div id="discordBox">
-  <p>🚀 Entra al servidor de Discord 👇</p>
-  <a href="https://discord.gg/9NbE3HWt" target="_blank">
-    https://discord.gg/9NbE3HWt
-  </a>
+  <p>🚀 Discord 👇</p>
+  <a href="https://discord.gg/9NbE3HWt" target="_blank">Entrar</a>
 </div>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let madera = 0;
-let hachaNivel = 1;
-let rebirths = 0;
-let multiplicador = 1;
+let madera=0,hachaNivel=1,rebirths=0,multiplicador=1;
+let arbolesTalados=0;
 
-let jugador = { x: 100, y: 100, size: 20, speed: 3 };
+let jugador={x:100,y:100,size:20,speed:3};
+let arboles=[{x:200,y:200},{x:300,y:150},{x:400,y:250}];
 
-let arboles = [
-  { x: 200, y: 200 },
-  { x: 300, y: 150 },
-  { x: 400, y: 250 }
-];
-
-// SAVE
-function cargar() {
-  const save = JSON.parse(localStorage.getItem("woodGameSave"));
-  if (save) {
-    madera = save.madera || 0;
-    hachaNivel = save.hachaNivel || 1;
-    arboles = save.arboles || arboles;
-    rebirths = save.rebirths || 0;
-    multiplicador = save.multiplicador || 1;
-  }
-
-  const vol = localStorage.getItem("volumen");
-  document.getElementById("volumen").value = vol ? vol : 50;
-}
-
-function guardar() {
-  localStorage.setItem("woodGameSave", JSON.stringify({
-    madera, hachaNivel, arboles, rebirths, multiplicador
-  }));
-}
+// LOGROS
+let metas=[1,10,100,1000,10000,100000,1000000];
+let logros={primera:false,milestones:{}};
 
 // INPUT
-let keys = {};
+let keys={};
+document.addEventListener("keydown",e=>{
+keys[e.key.toLowerCase()]=true;
 
-document.addEventListener("keydown", (e) => {
-  keys[e.key.toLowerCase()] = true;
-
-  if (e.code === "Space") {
-    e.preventDefault();
-    talar();
-  }
-
-  if (e.key === "e") plantar();
-  if (e.key === "q") mejorarHacha();
-  if (e.key === "r") rebirth();
+if(e.code==="Space"){e.preventDefault();talar();}
+if(e.key==="e") plantar();
+if(e.key==="q") mejorar();
+if(e.key==="r") rebirth();
 });
-
-document.addEventListener("keyup", (e) => {
-  keys[e.key.toLowerCase()] = false;
-});
+document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 
 // MOVIMIENTO
-function mover() {
-  if (keys["w"]) jugador.y -= jugador.speed;
-  if (keys["s"]) jugador.y += jugador.speed;
-  if (keys["a"]) jugador.x -= jugador.speed;
-  if (keys["d"]) jugador.x += jugador.speed;
+function mover(){
+if(keys["w"])jugador.y-=jugador.speed;
+if(keys["s"])jugador.y+=jugador.speed;
+if(keys["a"])jugador.x-=jugador.speed;
+if(keys["d"])jugador.x+=jugador.speed;
 
-  jugador.x = Math.max(0, Math.min(canvas.width - jugador.size, jugador.x));
-  jugador.y = Math.max(0, Math.min(canvas.height - jugador.size, jugador.y));
+jugador.x=Math.max(0,Math.min(canvas.width-jugador.size,jugador.x));
+jugador.y=Math.max(0,Math.min(canvas.height-jugador.size,jugador.y));
 }
 
-// DISTANCIA
-function estaCerca(a, b) {
-  return Math.abs(a.x - b.x) < 25 && Math.abs(a.y - b.y) < 25;
-}
+function cerca(a,b){return Math.abs(a.x-b.x)<25 && Math.abs(a.y-b.y)<25;}
 
 // TALAR
-let ultimoGolpe = 0;
+let cd=0;
+function talar(){
+let now=Date.now();
+if(now-cd<200)return;
+cd=now;
 
-function talar() {
-  let cooldown = Math.max(100, 300 - hachaNivel * 20);
-  let ahora = Date.now();
-  if (ahora - ultimoGolpe < cooldown) return;
-  ultimoGolpe = ahora;
+arboles.forEach(a=>{
+if(cerca(jugador,a)){
+madera+=hachaNivel*multiplicador;
+arbolesTalados++;
 
-  arboles.forEach(arbol => {
-    if (estaCerca(jugador, arbol)) {
-      madera += hachaNivel * multiplicador;
-      arbol.x = Math.random() * (canvas.width - 20);
-      arbol.y = Math.random() * (canvas.height - 20);
-    }
-  });
+a.x=Math.random()*580;
+a.y=Math.random()*380;
+}
+});
 
-  actualizarUI();
+actualizar();
 }
 
 // PLANTAR
-function plantar() {
-  if (madera < 10) return;
-
-  let nuevo = { x: jugador.x + 25, y: jugador.y };
-
-  let ocupado = arboles.some(a =>
-    Math.abs(a.x - nuevo.x) < 20 &&
-    Math.abs(a.y - nuevo.y) < 20
-  );
-
-  if (!ocupado) {
-    arboles.push(nuevo);
-    madera -= 10;
-    actualizarUI();
-  }
+function plantar(){
+if(madera<10)return;
+arboles.push({x:jugador.x+20,y:jugador.y});
+madera-=10;
+actualizar();
 }
 
 // MEJORAR
-function mejorarHacha() {
-  let costo = Math.floor(20 * Math.pow(1.5, hachaNivel));
-
-  if (madera >= costo) {
-    madera -= costo;
-    hachaNivel++;
-
-    document.getElementById("levelSound").play();
-
-    let t = document.getElementById("levelUpText");
-    t.style.opacity = 1;
-    setTimeout(() => t.style.opacity = 0, 600);
-
-    actualizarUI();
-  }
+function mejorar(){
+let costo=Math.floor(20*Math.pow(1.5,hachaNivel));
+if(madera>=costo){
+madera-=costo;
+hachaNivel++;
+actualizar();
+}
 }
 
 // REBIRTH
-function rebirth() {
-  let req = 1000 * (rebirths + 1);
-  if (madera < req) return;
+function rebirth(){
+if(madera<1000)return;
+rebirths++;
+multiplicador+=0.5;
+madera=0;
+hachaNivel=1;
+actualizar();
+}
 
-  rebirths++;
-  multiplicador += 0.5;
+// LOGROS
+function revisarLogros(){
 
-  madera = 0;
-  hachaNivel = 1;
+if(!logros.primera && arbolesTalados>=1){
+logros.primera=true;
+alert("🏆 La primera vez");
+}
 
-  arboles = [
-    { x: 200, y: 200 },
-    { x: 300, y: 150 }
-  ];
-
-  actualizarUI();
+metas.forEach(m=>{
+if(arbolesTalados>=m && !logros.milestones[m]){
+logros.milestones[m]=true;
+alert("🏆 "+m+" árboles talados!");
+}
+});
 }
 
 // UI
-function actualizarUI() {
-  document.getElementById("madera").textContent = Math.floor(madera);
-  document.getElementById("hacha").textContent = hachaNivel;
-  document.getElementById("rebirths").textContent = rebirths;
-  document.getElementById("multi").textContent = multiplicador.toFixed(1);
+function actualizar(){
+document.getElementById("madera").textContent=madera;
+document.getElementById("hacha").textContent=hachaNivel;
+document.getElementById("rebirths").textContent=rebirths;
+document.getElementById("multi").textContent=multiplicador;
 
-  let costo = Math.floor(20 * Math.pow(1.5, hachaNivel));
-  let progreso = Math.min(madera / costo, 1);
+let costo=Math.floor(20*Math.pow(1.5,hachaNivel));
+document.getElementById("barraHacha").style.width=(madera/costo*100)+"%";
+document.getElementById("mensajeMejora").textContent=madera>=costo?"Presiona Q":"";
 
-  document.getElementById("barraHacha").style.width = (progreso * 100) + "%";
-  document.getElementById("progresoTexto").textContent = Math.floor(madera) + " / " + costo;
-  document.getElementById("mensajeMejora").textContent =
-    madera >= costo ? "⚡ Presiona Q para mejorar!!" : "";
+revisarLogros();
 }
 
-// YOUTUBE API
-let player;
-let isPlaying = false;
+// MENU LOGROS
+function toggleLogros(){
+let menu=document.getElementById("menuLogros");
+menu.style.display=menu.style.display==="none"?"block":"none";
 
-function onYouTubeIframeAPIReady() {
-  player = new YT.Player("ytplayer", {
-    height: "0",
-    width: "0",
-    videoId: "",
-    events: {
-      onReady: () => {
-        let vol = document.getElementById("volumen").value;
-        player.setVolume(vol);
-      }
-    }
-  });
+let html=`<li>${logros.primera?"✅":"❌"} La primera vez</li>`;
+
+metas.forEach(m=>{
+html+=`<li>${logros.milestones[m]?"✅":"❌"} ${m} árboles</li>`;
+});
+
+document.getElementById("listaLogros").innerHTML=html;
 }
 
-function cargarYT() {
-  let link = document.getElementById("ytlink").value;
-  let id = link.split("v=")[1];
-  if (id.includes("&")) id = id.split("&")[0];
-
-  player.loadVideoById(id);
-  player.playVideo();
-  isPlaying = true;
+// YOUTUBE
+let player,isPlaying=false;
+function onYouTubeIframeAPIReady(){
+player=new YT.Player("ytplayer",{height:"0",width:"0"});
 }
-
-function togglePlay() {
-  if (!player) return;
-
-  if (isPlaying) player.pauseVideo();
-  else player.playVideo();
-
-  isPlaying = !isPlaying;
+function cargarYT(){
+let link=document.getElementById("ytlink").value;
+let id=link.split("v=")[1];
+if(id.includes("&"))id=id.split("&")[0];
+player.loadVideoById(id);
+player.playVideo();
+isPlaying=true;
 }
-
-// VOLUMEN
-document.getElementById("volumen").addEventListener("input", () => {
-  let vol = document.getElementById("volumen").value;
-  if (player) player.setVolume(vol);
-  localStorage.setItem("volumen", vol);
+function togglePlay(){
+if(!player)return;
+isPlaying?player.pauseVideo():player.playVideo();
+isPlaying=!isPlaying;
+}
+document.getElementById("volumen").addEventListener("input",()=>{
+let v=document.getElementById("volumen").value;
+if(player)player.setVolume(v);
 });
 
 // DRAW
-function dibujar() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+function draw(){
+ctx.clearRect(0,0,600,400);
 
-  ctx.fillStyle = "blue";
-  ctx.fillRect(jugador.x, jugador.y, jugador.size, jugador.size);
+ctx.fillStyle="blue";
+ctx.fillRect(jugador.x,jugador.y,20,20);
 
-  ctx.fillStyle = "green";
-  arboles.forEach(a => ctx.fillRect(a.x, a.y, 20, 20));
+ctx.fillStyle="green";
+arboles.forEach(a=>ctx.fillRect(a.x,a.y,20,20));
 }
 
 // LOOP
-function loop() {
-  mover();
-  dibujar();
-  requestAnimationFrame(loop);
+function loop(){
+mover();
+draw();
+requestAnimationFrame(loop);
 }
 
-// START
-cargar();
 loop();
-actualizarUI();
-
-setInterval(guardar, 2000);
-window.addEventListener("beforeunload", guardar);
+actualizar();
 </script>
 
 </body>
