@@ -44,10 +44,21 @@ button { margin:5px; padding:5px 10px; cursor:pointer;}
 
 <h1>🌳 The Wood Game lol</h1>
 
+<!-- 🌍 IDIOMA -->
+<button onclick="cambiarIdioma('es')">🇪🇸</button>
+<button onclick="cambiarIdioma('en')">🇺🇸</button>
+
 <canvas id="game" width="600" height="400"></canvas>
 
-<p>🪵 <span id="madera">0</span> | 🪓 <span id="hacha">1</span></p>
-<p>🔁 <span id="rebirths">0</span> | ⚡ <span id="multi">1</span>x</p>
+<p>
+<span id="txtMadera">Madera</span>: <span id="madera">0</span> |
+<span id="txtHacha">Hacha</span>: <span id="hacha">1</span>
+</p>
+
+<p>
+<span id="txtRebirth">Rebirths</span>: <span id="rebirths">0</span> |
+<span id="txtMulti">Multiplicador</span>: <span id="multi">1</span>x
+</p>
 
 <div class="barra-container">
   <div id="barraHacha"></div>
@@ -55,10 +66,10 @@ button { margin:5px; padding:5px 10px; cursor:pointer;}
 
 <p id="mensajeMejora"></p>
 
-<button onclick="toggleLogros()">🏆 Logros</button>
+<button onclick="toggleLogros()">🏆 <span id="txtLogros">Logros</span></button>
 
 <div id="menuLogros">
-  <h2>🏆 Logros</h2>
+  <h2>🏆 <span id="tituloLogros">Logros</span></h2>
   <ul id="listaLogros"></ul>
   <button onclick="toggleLogros()">Cerrar</button>
 </div>
@@ -72,7 +83,7 @@ button { margin:5px; padding:5px 10px; cursor:pointer;}
 
 <div id="ytplayer"></div>
 
-<!-- Discord -->
+<!-- DISCORD -->
 <div id="discordBox">
   <p>🚀 Discord 👇</p>
   <a href="https://discord.gg/9NbE3HWt" target="_blank">Entrar</a>
@@ -82,6 +93,36 @@ button { margin:5px; padding:5px 10px; cursor:pointer;}
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+// 🌍 IDIOMAS
+let idioma = "es";
+
+const textos = {
+  es: {
+    madera: "Madera",
+    hacha: "Hacha",
+    rebirth: "Rebirths",
+    multi: "Multiplicador",
+    logros: "Logros",
+    primera: "La primera vez",
+    mejora: "Presiona Q para mejorar"
+  },
+  en: {
+    madera: "Wood",
+    hacha: "Axe",
+    rebirth: "Rebirths",
+    multi: "Multiplier",
+    logros: "Achievements",
+    primera: "First time",
+    mejora: "Press Q to upgrade"
+  }
+};
+
+function cambiarIdioma(id){
+  idioma=id;
+  actualizarUI();
+}
+
+// VARIABLES
 let madera=0,hachaNivel=1,rebirths=0,multiplicador=1;
 let arbolesTalados=0;
 
@@ -96,7 +137,6 @@ let logros={primera:false,milestones:{}};
 let keys={};
 document.addEventListener("keydown",e=>{
 keys[e.key.toLowerCase()]=true;
-
 if(e.code==="Space"){e.preventDefault();talar();}
 if(e.key==="e") plantar();
 if(e.key==="q") mejorar();
@@ -134,7 +174,7 @@ a.y=Math.random()*380;
 }
 });
 
-actualizar();
+actualizarUI();
 }
 
 // PLANTAR
@@ -142,7 +182,7 @@ function plantar(){
 if(madera<10)return;
 arboles.push({x:jugador.x+20,y:jugador.y});
 madera-=10;
-actualizar();
+actualizarUI();
 }
 
 // MEJORAR
@@ -151,7 +191,7 @@ let costo=Math.floor(20*Math.pow(1.5,hachaNivel));
 if(madera>=costo){
 madera-=costo;
 hachaNivel++;
-actualizar();
+actualizarUI();
 }
 }
 
@@ -162,7 +202,7 @@ rebirths++;
 multiplicador+=0.5;
 madera=0;
 hachaNivel=1;
-actualizar();
+actualizarUI();
 }
 
 // LOGROS
@@ -170,27 +210,37 @@ function revisarLogros(){
 
 if(!logros.primera && arbolesTalados>=1){
 logros.primera=true;
-alert("🏆 La primera vez");
+alert("🏆 "+textos[idioma].primera);
 }
 
 metas.forEach(m=>{
 if(arbolesTalados>=m && !logros.milestones[m]){
 logros.milestones[m]=true;
-alert("🏆 "+m+" árboles talados!");
+alert("🏆 "+m+" árboles!");
 }
 });
 }
 
 // UI
-function actualizar(){
+function actualizarUI(){
 document.getElementById("madera").textContent=madera;
 document.getElementById("hacha").textContent=hachaNivel;
 document.getElementById("rebirths").textContent=rebirths;
 document.getElementById("multi").textContent=multiplicador;
 
+// TEXTOS
+document.getElementById("txtMadera").textContent=textos[idioma].madera;
+document.getElementById("txtHacha").textContent=textos[idioma].hacha;
+document.getElementById("txtRebirth").textContent=textos[idioma].rebirth;
+document.getElementById("txtMulti").textContent=textos[idioma].multi;
+document.getElementById("txtLogros").textContent=textos[idioma].logros;
+document.getElementById("tituloLogros").textContent=textos[idioma].logros;
+
 let costo=Math.floor(20*Math.pow(1.5,hachaNivel));
 document.getElementById("barraHacha").style.width=(madera/costo*100)+"%";
-document.getElementById("mensajeMejora").textContent=madera>=costo?"Presiona Q":"";
+
+document.getElementById("mensajeMejora").textContent=
+madera>=costo?textos[idioma].mejora:"";
 
 revisarLogros();
 }
@@ -200,10 +250,10 @@ function toggleLogros(){
 let menu=document.getElementById("menuLogros");
 menu.style.display=menu.style.display==="none"?"block":"none";
 
-let html=`<li>${logros.primera?"✅":"❌"} La primera vez</li>`;
+let html=`<li>${logros.primera?"✅":"❌"} ${textos[idioma].primera}</li>`;
 
 metas.forEach(m=>{
-html+=`<li>${logros.milestones[m]?"✅":"❌"} ${m} árboles</li>`;
+html+=`<li>${logros.milestones[m]?"✅":"❌"} ${m}</li>`;
 });
 
 document.getElementById("listaLogros").innerHTML=html;
@@ -251,7 +301,7 @@ requestAnimationFrame(loop);
 }
 
 loop();
-actualizar();
+actualizarUI();
 </script>
 
 </body>
